@@ -1,0 +1,55 @@
+[
+  {
+    "id": "TC01_WORKSHOP_PLANNING",
+    "description": "Multi-intent live speech stream with early retrieval trigger before utterance end",
+    "turn_type": "initial_stream",
+    "chunks": [
+      {"offset_seconds": 0.0, "text": "I need to plan a customer workshop in..."},
+      {"offset_seconds": 0.8, "text": "...Pune for 30 people, and I need..."},
+      {"offset_seconds": 1.6, "text": "...the cancellation policy and the catering options."},
+      {"offset_seconds": 2.1, "text": "[Utterance End]"}
+    ],
+    "expected_early_retrieval_before_sec": 2.1,
+    "expected_early_retrieval_at_sec": 0.8,
+    "expected_min_intents": 2,
+    "expected_topics": ["venue", "cancellation"],
+    "expected_min_grounding_ratio": 0.85
+  },
+  {
+    "id": "TC02_SESSION_DELTA_REFINEMENT",
+    "description": "Two-turn conversational delta refinement preserving prior valid citations and claim gating",
+    "turn_type": "multi_turn_delta",
+    "turn_1_query": "What are the standard employee travel reimbursement rules and limits?",
+    "turn_2_late_detail": "The trip was international and the booking was made after travel.",
+    "expected_v1_version": 1,
+    "expected_v2_version": 2,
+    "expected_delta_constraints": ["international", "post-travel booking"],
+    "expected_prohibited_terms_in_delta_search": ["fifteen business days", "receipt submitted within"]
+  },
+  {
+    "id": "TC03_PRESENTATION_SUPPRESSION",
+    "description": "Formatting restructuring request correctly suppressed without triggering retrieval thrash",
+    "turn_type": "presentation_rule",
+    "query": "Can you turn the last answer into 3 bullets?",
+    "expected_decision": "SUPPRESS",
+    "expected_reason": "presentation_restructure",
+    "expected_eligibility": false
+  },
+  {
+    "id": "TC04_INCOMPLETE_FRAGMENT",
+    "description": "Under-specified initial speech fragment held in WAIT state",
+    "turn_type": "incomplete_fragment",
+    "query": "I was wondering...",
+    "expected_decision": "WAIT",
+    "expected_reason": "incomplete_intent",
+    "expected_eligibility": false
+  },
+  {
+    "id": "TC05_UNINDEXED_TOPIC_UNCERTAINTY",
+    "description": "Query referencing unindexed domain outputs honest uncertainty declaration without hallucinated citations",
+    "turn_type": "unindexed_intent",
+    "query": "What is the per diem reimbursement rate for lunar orbit space station travel?",
+    "expected_uncertainty_substring": "could not be verified from the retrieved corpus",
+    "expected_hallucinations_count": 0
+  }
+]

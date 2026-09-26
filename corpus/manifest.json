@@ -1,0 +1,88 @@
+{
+  "chunks": [
+    {
+      "chunk_id": "DOC_POL_SAMPLE_CHUNK_001",
+      "doc_id": "POL_SAMPLE",
+      "metadata": {
+        "char_count": 66,
+        "chunk_index": 1,
+        "is_split": false,
+        "token_count": 9
+      },
+      "page": 1,
+      "section": "# Corporate Travel and Event Policy (Document Ref: PRISM-2026-POL)",
+      "text": "# Corporate Travel and Event Policy (Document Ref: PRISM-2026-POL)"
+    },
+    {
+      "chunk_id": "DOC_POL_SAMPLE_CHUNK_002",
+      "doc_id": "POL_SAMPLE",
+      "metadata": {
+        "char_count": 282,
+        "chunk_index": 2,
+        "is_split": false,
+        "token_count": 35
+      },
+      "page": 1,
+      "section": "\u00a7 1.0 General Administration & Governance",
+      "text": "\u00a7 1.0 General Administration & Governance This policy establishes standard corporate travel, accommodation, and event expenditure standards for all participating team members and contractors. Compliance with these operational instructions is mandatory across all regional divisions."
+    },
+    {
+      "chunk_id": "DOC_POL_SAMPLE_CHUNK_003",
+      "doc_id": "POL_SAMPLE",
+      "metadata": {
+        "char_count": 632,
+        "chunk_index": 3,
+        "is_split": false,
+        "token_count": 90
+      },
+      "page": 1,
+      "section": "\u00a7 2.1 Reimbursement Limits & Expense Allowances",
+      "text": "\u00a7 2.1 Reimbursement Limits & Expense Allowances All standard business meals are eligible for reimbursement up to the established reimbursement limits. The maximum daily reimbursement limits for domestic travel shall not exceed $150 per day, inclusive of breakfast ($30), lunch ($45), and dinner ($75). Lodging reimbursement limits are capped at $250 per night excluding state occupancy taxes. Any individual expense exceeding $50 requires a verified itemized receipt submitted via the automated portal within fifteen business days. Reimbursement limits may only be overridden with prior written consent from the department director."
+    },
+    {
+      "chunk_id": "DOC_POL_SAMPLE_CHUNK_004",
+      "doc_id": "POL_SAMPLE",
+      "metadata": {
+        "char_count": 591,
+        "chunk_index": 4,
+        "is_split": false,
+        "token_count": 87
+      },
+      "page": 1,
+      "section": "\u00a7 3.4 Cancellation Terms & Refund Conditions",
+      "text": "\u00a7 3.4 Cancellation Terms & Refund Conditions Event registration and travel bookings are subject to strict cancellation terms. Cancellations submitted more than 30 days prior to the scheduled event date will receive a full 100% refund of all registration fees. Cancellations submitted between 14 and 30 days prior will incur a 25% administrative fee under standard cancellation terms. Any cancellation notice provided less than 14 days before the event is non-refundable unless resulting from an unforeseen medical emergency. All cancellation requests must be transmitted formally in writing."
+    },
+    {
+      "chunk_id": "DOC_POL_SAMPLE_CHUNK_005",
+      "doc_id": "POL_SAMPLE",
+      "metadata": {
+        "char_count": 253,
+        "chunk_index": 5,
+        "is_split": false,
+        "token_count": 34
+      },
+      "page": 1,
+      "section": "\u00a7 4.0 Security & Corpus Compliance Mandates",
+      "text": "\u00a7 4.0 Security & Corpus Compliance Mandates Participants must adhere to the data privacy and security baseline established in SRD-SLRAG-001. All retrieved documentation is subject to strict local corpus isolation without unverified network transmission."
+    }
+  ],
+  "documents": {
+    "POL_SAMPLE": {
+      "doc_id": "POL_SAMPLE",
+      "pages": [
+        1
+      ],
+      "sections": [
+        "# Corporate Travel and Event Policy (Document Ref: PRISM-2026-POL)",
+        "\u00a7 1.0 General Administration & Governance",
+        "\u00a7 2.1 Reimbursement Limits & Expense Allowances",
+        "\u00a7 3.4 Cancellation Terms & Refund Conditions",
+        "\u00a7 4.0 Security & Corpus Compliance Mandates"
+      ],
+      "total_chunks": 5
+    }
+  },
+  "schema_version": "1.0.0",
+  "total_chunks": 5,
+  "total_documents": 1
+}

@@ -1,0 +1,22 @@
+# Corporate Travel and Event Policy (Document Ref: PRISM-2026-POL)
+
+§ 1.0 General Administration & Governance
+This policy establishes standard corporate travel, accommodation, and event expenditure standards for all participating team members and contractors. Compliance with these operational instructions is mandatory across all regional divisions.
+
+§ 2.1 Reimbursement Limits & Expense Allowances
+All standard business meals are eligible for reimbursement up to the established reimbursement limits. The maximum daily reimbursement limits for domestic travel shall not exceed $150 per day, inclusive of breakfast ($30), lunch ($45), and dinner ($75). Lodging reimbursement limits are capped at $250 per night excluding state occupancy taxes. Any individual expense exceeding $50 requires a verified itemized receipt submitted via the automated portal within fifteen business days. Reimbursement limits may only be overridden with prior written consent from the department director.
+
+§ 2.2 Venue Booking & Pune Workshop Capacity Guidelines
+For events organized in Western India, the corporate regional facility in Pune provides dedicated workshop rooms. Conference Room Alpha in Pune supports a capacity of up to 30 people with high-definition audio-visual systems and modular seating. Bookings for customer workshops in Pune for 30 people or more must be submitted at least two weeks in advance. Facility usage includes high-speed guest Wi-Fi and presentation hardware.
+
+§ 2.3 Catering Services & Meal Options
+Approved catering services must be contracted for on-site meetings and workshops exceeding four hours. Available catering options include continental breakfast, executive sandwich buffets, and hot buffet lunches. Standard per-person catering rates are capped at $25 for morning refreshments and $40 for lunch catering options. Special dietary requirements (vegetarian, vegan, gluten-free) must be designated when confirming catering options forty-eight hours prior to event commencement.
+
+§ 2.4 International Travel & Post-Travel Booking Policies
+For international travel journeys, the daily meal reimbursement limit increases to $220 per day. All international accommodation and flight itineraries must receive prior division approval. Any booking made after travel has commenced or post-travel booking is strictly prohibited and non-reimbursable unless an explicit retroactive emergency exception waiver is authorized in writing by the Corporate Audit Committee.
+
+§ 3.4 Cancellation Terms & Refund Conditions
+Event registration and travel bookings are subject to strict cancellation terms. Cancellations submitted more than 30 days prior to the scheduled event date will receive a full 100% refund of all registration fees. Cancellations submitted between 14 and 30 days prior will incur a 25% administrative fee under standard cancellation terms. Any cancellation notice provided less than 14 days before the event is non-refundable unless resulting from an unforeseen medical emergency. All cancellation requests must be transmitted formally in writing.
+
+§ 4.0 Security & Corpus Compliance Mandates
+Participants must adhere to the data privacy and security baseline established in SRD-SLRAG-001. All retrieved documentation is subject to strict local corpus isolation without unverified network transmission.

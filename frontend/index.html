@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streaming Live RAG — Samsung PRISM Hackathon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070B14;
+      --bg-panel: rgba(16, 24, 40, 0.75);
+      --bg-card: rgba(26, 38, 64, 0.65);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(0, 242, 254, 0.25);
+      --text-main: #F1F5F9;
+      --text-muted: #94A3B8;
+      --accent-cyan: #00F2FE;
+      --accent-blue: #4FACFE;
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --accent-rose: #EF4444;
+      --accent-purple: #8B5CF6;
+      --font-ui: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(20, 40, 160, 0.25) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      padding: 1.25rem 2rem;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #1428A0 0%, #00F2FE 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: white;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.35);
+    }
+
+    .brand-text h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #FFFFFF, #93C5FD);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      color: var(--accent-emerald);
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+    }
+
+    .sla-pill {
+      background: rgba(0, 242, 254, 0.1);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+    }
+
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 1.1fr 1.2fr 1.3fr;
+      gap: 1.5rem;
+      padding: 1.5rem 2rem;
+      flex: 1;
+      height: calc(100vh - 80px);
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      transition: border-color 0.3s ease;
+    }
+
+    .panel:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .panel-header {
+      padding: 1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .panel-body {
+      padding: 1.25rem;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Panel 1 Elements */
+    .scenario-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .btn-scenario {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-scenario:hover {
+      background: rgba(0, 242, 254, 0.15);
+      border-color: var(--accent-cyan);
+      color: white;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .input-box {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-color);
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .input-box:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%);
+      border: none;
+      color: #070B14;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-send:hover {
+      opacity: 0.9;
+    }
+
+    .terminal-box {
+      background: #040710;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 1rem;
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .stream-line {
+      line-height: 1.5;
+    }
+
+    .stream-ts {
+      color: var(--accent-blue);
+      margin-right: 0.5rem;
+    }
+
+    .stream-chunk {
+      color: #E2E8F0;
+    }
+
+    .controller-badge-container {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+    }
+
+    .badge-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .controller-badge {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      letter-spacing: 0.05em;
+      transition: all 0.3s ease;
+    }
+
+    .badge-wait {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--accent-amber);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+
+    .badge-retrieve {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--accent-emerald);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-suppress {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: var(--accent-rose);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+    }
+
+    .badge-reason {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Panel 2 Elements */
+    .intent-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .intent-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .intent-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+    }
+
+    .intent-query {
+      font-size: 0.85rem;
+      color: white;
+      font-weight: 500;
+    }
+
+    .intent-context {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .context-tag {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+
+    .evidence-item {
+      background: var(--bg-card);
+      border-left: 3px solid var(--accent-blue);
+      border-radius: 0 8px 8px 0;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .evidence-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .citation-tag {
+      background: rgba(0, 242, 254, 0.15);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .rrf-score {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .evidence-snippet {
+      font-size: 0.8rem;
+      color: #CBD5E1;
+      line-height: 1.4;
+    }
+
+    /* Panel 3 Elements */
+    .lineage-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 0.6rem 0.85rem;
+      border-radius: 8px;
+    }
+
+    .lineage-version {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--accent-purple);
+      font-family: var(--font-mono);
+    }
+
+    .verifier-pill {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .verifier-pass {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-emerald);
+    }
+
+    .answer-box {
+      background: #040710;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      line-height: 1.7;
+      font-size: 0.9rem;
+      flex: 1;
+      overflow-y: auto;
+      white-space: pre-line;
+    }
+
+    .answer-citation {
+      background: rgba(0, 242, 254, 0.15);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .metric-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+
+    .metric-val {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 0.2rem;
+    }
+
+    .metric-title {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .trace-card {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">S</div>
+      <div class="brand-text">
+        <h1>STREAMING LIVE RAG ENGINE</h1>
+        <p>Theme 04 • Samsung PRISM Hackathon • SRD-SLRAG-001</p>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        <span id="session-badge">Session Initializing...</span>
+      </div>
+      <div class="sla-pill">SLA: &lt; 15ms Gate G2</div>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    <!-- Panel 1: Live Spoken Transcript & Controller -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🎙️</span> Live Speech Ingestion
+        </div>
+        <span style="font-size: 0.75rem; color: var(--text-muted);" id="chunk-counter">0 chunks</span>
+      </div>
+      <div class="panel-body">
+        <div class="scenario-buttons">
+          <button class="btn-scenario" onclick="runWorkshopScenario()">▶ Replay Workshop (0s-2.1s)</button>
+          <button class="btn-scenario" onclick="runTurn2Delta()">⚡ Turn 2 Delta ('International')</button>
+          <button class="btn-scenario" onclick="runRestyle()">📑 Turn into Bullets</button>
+          <button class="btn-scenario" onclick="runIncomplete()">⏳ Partial Fragment</button>
+        </div>
+
+        <div class="input-group">
+          <input type="text" id="manual-chunk-input" class="input-box" placeholder="Type spoken speech fragment...">
+          <button class="btn-send" onclick="sendManualChunk()">Send</button>
+        </div>
+
+        <div class="terminal-box" id="transcript-terminal">
+          <div style="color: var(--text-muted);">Waiting for audio/transcript stream...</div>
+        </div>
+
+        <div class="controller-badge-container">
+          <div class="badge-label">Controller Decision (Gate G1/G2)</div>
+          <div id="ctrl-badge" class="controller-badge badge-wait">WAIT</div>
+          <div id="ctrl-reason" class="badge-reason">Reason: awaiting spoken tokens</div>
+          <div id="ctrl-latency" style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--accent-cyan);">Latency: 0.00ms</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Decomposed Intents & Hybrid Fused Evidence -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🔍</span> Multi-Intent & Fused Evidence
+        </div>
+        <span style="font-size: 0.75rem; color: var(--text-muted);" id="evidence-count">0 candidates</span>
+      </div>
+      <div class="panel-body">
+        <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+          Decomposed Sub-Queries (Gate G3)
+        </div>
+        <div id="intents-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="font-size: 0.8rem; color: var(--text-muted);">No active sub-queries yet.</div>
+        </div>
+
+        <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-top: 0.5rem;">
+          Fused Evidence Candidates (RRF & Deduplicated)
+        </div>
+        <div id="evidence-container" style="display: flex; flex-direction: column; gap: 0.6rem;">
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Awaiting retrieval trigger...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Grounded Answer & Telemetry Lineage -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🧠</span> Live Grounded Synthesis
+        </div>
+        <span id="grounding-badge" class="verifier-pill verifier-pass">Verified</span>
+      </div>
+      <div class="panel-body">
+        <div class="lineage-banner">
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Lineage: </span>
+            <span id="answer-version" class="lineage-version">V1 (Initial)</span>
+          </div>
+          <div id="citation-support-text" style="font-size: 0.75rem; color: var(--accent-emerald);">Support: 100%</div>
+        </div>
+
+        <div class="answer-box" id="answer-box">
+          Awaiting retrieval synthesis...
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-title">End-to-End Latency</div>
+            <div class="metric-val" id="metric-latency">-- ms</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Controller Latency</div>
+            <div class="metric-val" id="metric-ctrl-lat">-- ms</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Token Footprint</div>
+            <div class="metric-val" id="metric-tokens">-- in / -- out</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Corpus Isolation</div>
+            <div class="metric-val" style="color: var(--accent-emerald);">100% LOCAL</div>
+          </div>
+        </div>
+
+        <div class="trace-card">
+          <span id="trace-id-display">Trace: none</span>
+          <span style="color: var(--accent-blue);">OTel JSONL</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let sessionId = null;
+    let eventSource = null;
+    let chunkCount = 0;
+
+    async function initSession() {
+      try {
+        const res = await fetch('/api/session', { method: 'POST' });
+        const data = await res.json();
+        sessionId = data.session_id;
+        document.getElementById('session-badge').innerText = `Session: ${sessionId}`;
+        connectEventStream();
+      } catch (err) {
+        console.error('Failed to init session', err);
+        document.getElementById('session-badge').innerText = 'Session Error';
+      }
+    }
+
+    function connectEventStream() {
+      if (eventSource) eventSource.close();
+      eventSource = new EventSource(`/api/session/${sessionId}/stream`);
+
+      eventSource.addEventListener('controller_decision', (e) => {
+        const d = JSON.parse(e.data);
+        updateControllerBadge(d.decision, d.reason, d.latency_ms);
+        appendTranscript(d.offset_seconds || 0, d.text);
+      });
+
+      eventSource.addEventListener('intent_decomposed', (e) => {
+        const d = JSON.parse(e.data);
+        renderIntents(d.sub_queries, d.is_delta);
+      });
+
+      eventSource.addEventListener('evidence_fused', (e) => {
+        const d = JSON.parse(e.data);
+        renderEvidence(d.candidates || d.citations);
+      });
+
+      eventSource.addEventListener('answer_version_update', (e) => {
+        const d = JSON.parse(e.data);
+        renderAnswer(d);
+      });
+
+      eventSource.addEventListener('telemetry', (e) => {
+        const d = JSON.parse(e.data);
+        renderTelemetry(d);
+      });
+    }
+
+    function updateControllerBadge(decision, reason, latency) {
+      const badge = document.getElementById('ctrl-badge');
+      badge.className = `controller-badge badge-${decision.toLowerCase()}`;
+      badge.innerText = decision;
+      document.getElementById('ctrl-reason').innerText = `Reason: ${reason}`;
+      document.getElementById('ctrl-latency').innerText = `Latency: ${latency}ms (<15ms SLA)`;
+      document.getElementById('metric-ctrl-lat').innerText = `${latency} ms`;
+    }
+
+    function appendTranscript(offset, text) {
+      chunkCount++;
+      document.getElementById('chunk-counter').innerText = `${chunkCount} chunks`;
+      const terminal = document.getElementById('transcript-terminal');
+      const line = document.createElement('div');
+      line.className = 'stream-line';
+      line.innerHTML = `<span class="stream-ts">[+${offset.toFixed(1)}s]</span><span class="stream-chunk">${text}</span>`;
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function renderIntents(subQueries, isDelta) {
+      const container = document.getElementById('intents-container');
+      container.innerHTML = '';
+      if (!subQueries || subQueries.length === 0) return;
+
+      subQueries.forEach((sq, idx) => {
+        const card = document.createElement('div');
+        card.className = 'intent-card';
+        const label = sq.label || (isDelta ? 'targeted_delta' : `intent_${idx+1}`);
+        const queryText = sq.query || sq;
+        card.innerHTML = `
+          <div class="intent-header">
+            <span class="intent-label">${label}</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Orthogonal Branch</span>
+          </div>
+          <div class="intent-query">"${queryText}"</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderEvidence(candidates) {
+      const container = document.getElementById('evidence-container');
+      container.innerHTML = '';
+      if (!candidates || candidates.length === 0) return;
+
+      document.getElementById('evidence-count').innerText = `${candidates.length} candidates`;
+
+      candidates.forEach((c) => {
+        const item = document.createElement('div');
+        item.className = 'evidence-item';
+        const tag = c.chunk_id ? `[${c.doc_id || 'DOC'} §${c.section || 'General'}]` : c;
+        const score = c.score ? `RRF: ${c.score.toFixed(4)}` : 'RRF Consensus';
+        const text = c.text ? c.text.slice(0, 160) + '...' : 'Evidence passage chunk...';
+
+        item.innerHTML = `
+          <div class="evidence-top">
+            <span class="citation-tag">${tag}</span>
+            <span class="rrf-score">${score}</span>
+          </div>
+          <div class="evidence-snippet">${text}</div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderAnswer(d) {
+      const vElem = document.getElementById('answer-version');
+      vElem.innerText = `V${d.answer_version} ${d.answer_version > 1 ? '[Delta Refined]' : ''}`;
+      
+      const box = document.getElementById('answer-box');
+      // Highlight inline [Doc_ID §Section] markers
+      const formatted = d.answer.replace(/\[([A-Za-z0-9_\-]+)\s+§([^\]]+)\]/g, '<span class="answer-citation">[$1 §$2]</span>');
+      box.innerHTML = formatted;
+
+      if (d.citation_support_ratio) {
+        document.getElementById('citation-support-text').innerText = `Support: ${Math.round(d.citation_support_ratio * 100)}%`;
+      }
+    }
+
+    function renderTelemetry(d) {
+      if (d.total_latency_ms) {
+        document.getElementById('metric-latency').innerText = `${d.total_latency_ms} ms`;
+      }
+      if (d.input_tokens) {
+        document.getElementById('metric-tokens').innerText = `${d.input_tokens} in / ${d.output_tokens} out`;
+      }
+      if (d.trace_id) {
+        document.getElementById('trace-id-display').innerText = `Trace: ${d.trace_id.slice(0, 12)}...`;
+      }
+    }
+
+    async function sendChunk(text, offset, isLast) {
+      if (!sessionId) return;
+      await fetch(`/api/session/${sessionId}/chunk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, offset_seconds: offset, is_last: isLast })
+      });
+    }
+
+    async function runWorkshopScenario() {
+      const transcript = [
+        { text: "I need to plan a customer workshop in...", offset: 0.0 },
+        { text: "...Pune for 30 people, and I need...", offset: 0.8 },
+        { text: "...the cancellation policy and the catering options.", offset: 1.6 },
+        { text: "[Utterance End]", offset: 2.1 }
+      ];
+      for (const item of transcript) {
+        await sendChunk(item.text, item.offset, item.text.includes('End'));
+        await new Promise(r => setTimeout(r, 650));
+      }
+    }
+
+    async function runTurn2Delta() {
+      await sendChunk("The trip was international and the booking was made after travel.", 3.0, true);
+    }
+
+    async function runRestyle() {
+      await sendChunk("Can you turn the last answer into 3 bullets?", 4.0, true);
+    }
+
+    async function runIncomplete() {
+      await sendChunk("I was wondering...", 0.5, false);
+    }
+
+    function sendManualChunk() {
+      const box = document.getElementById('manual-chunk-input');
+      const val = box.value.trim();
+      if (!val) return;
+      sendChunk(val, 0.0, true);
+      box.value = '';
+    }
+
+    window.addEventListener('DOMContentLoaded', initSession);
+  </script>
+</body>
+</html>
