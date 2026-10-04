@@ -1,6 +1,7 @@
 """Configuration module for Streaming Live RAG engine (Theme 04, Samsung PRISM Hackathon)."""
 
 from pathlib import Path
+from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,7 +15,7 @@ MANIFEST_PATH = CORPUS_DIR / "manifest.json"
 class Settings(BaseSettings):
     """Core runtime configuration settings adhering to SRD-SLRAG-001."""
 
-    model_config = SettingsConfigDict(env_prefix="SLRAG_", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="SLRAG_", extra="ignore", env_file=".env", env_file_encoding="utf-8")
 
     # Directory Paths
     base_dir: Path = BASE_DIR
@@ -44,6 +45,55 @@ class Settings(BaseSettings):
     corpus_isolation: bool = Field(
         default=True,
         description="Corpus isolation flag strictly disallowing external web requests",
+    )
+
+    # -------------------------------------------------------------------------
+    # STT (Speech-to-Text) Input Layer Configuration
+    # These settings control the upstream audio→transcript pipeline.
+    # They do NOT affect the retrieval / synthesis pipeline.
+    # -------------------------------------------------------------------------
+
+    input_mode: str = Field(
+        default="mock",
+        description=(
+            "Transcript input mode. "
+            "'mock' = deterministic benchmark replay (no API key needed). "
+            "'stt'  = real microphone + STT API (requires STT_API_KEY)."
+        ),
+    )
+
+    stt_provider: str = Field(
+        default="assemblyai",
+        description=(
+            "STT backend to use when input_mode='stt'. "
+            "Supported: 'assemblyai'. "
+            "Future: 'google', 'deepgram', 'whisper_local'."
+        ),
+    )
+
+    stt_api_key: Optional[str] = Field(
+        default=None,
+        description="API key for the configured STT provider. Keep server-side only.",
+    )
+
+    stt_endpoint: Optional[str] = Field(
+        default=None,
+        description="Custom STT WebSocket/REST endpoint URL (leave blank for provider default).",
+    )
+
+    stt_model: Optional[str] = Field(
+        default=None,
+        description="STT model identifier (provider-specific, e.g. 'nano' for AssemblyAI).",
+    )
+
+    stt_language: str = Field(
+        default="en",
+        description="BCP-47 language code for STT transcription (e.g. 'en', 'hi', 'en-IN').",
+    )
+
+    stt_mock_replay_delay_ms: float = Field(
+        default=100.0,
+        description="Artificial inter-event delay for mock STT provider (ms). Set 0 for synchronous tests.",
     )
 
 

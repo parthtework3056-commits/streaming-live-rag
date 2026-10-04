@@ -1,11 +1,12 @@
 """OpenTelemetry-compliant Structured Event and Trace Logger (Component C10, SRD-SLRAG-001).
 
 Records deterministic, auditable telemetry events for every streaming turn.
+STT telemetry extension added as additive layer — does NOT change existing
+record_turn() contract.
 """
 
 from __future__ import annotations
 
-import json
 import time
 import uuid
 from pathlib import Path
@@ -68,12 +69,52 @@ class SessionTraceRecord(BaseModel):
         return self.model_dump_json(indent=2)
 
 
+# ---------------------------------------------------------------------------
+# STT Telemetry — additive extension (does NOT change existing record_turn())
+# ---------------------------------------------------------------------------
+
+class STTEventTelemetry(BaseModel):
+    """Telemetry payload for a single STT lifecycle event.
+
+    Covered events:
+        stt_session_started, stt_connected, stt_partial_transcript,
+        stt_final_transcript, stt_error, stt_disconnected
+
+    Security: raw transcript text is NEVER stored here — only metadata.
+    """
+
+    event_name: str = Field(..., description="STT lifecycle event name")
+    session_id: str = Field(..., description="Active session identifier")
+    timestamp_ms: int = Field(
+        default_factory=lambda: int(time.time() * 1000),
+        description="Epoch timestamp in milliseconds",
+    )
+    sequence_id: int = Field(default=0, ge=0)
+    provider: str = Field(default="unknown", description="STT provider identifier")
+    text_length: int = Field(
+        default=0, ge=0,
+        description="Character count of transcript (no raw text logged for privacy)",
+    )
+    is_final: bool = Field(default=False)
+    latency_ms: Optional[float] = Field(default=None, description="Measured latency if available")
+    error_detail: Optional[str] = Field(
+        default=None,
+        description="Human-readable error description (must not contain secrets)",
+    )
+
+    def to_json(self) -> str:
+        return self.model_dump_json()
+
+
 class StructuredTraceLogger:
     """Manages emission and local storage of structured session telemetry."""
 
     def __init__(self, log_path: Optional[Path | str] = None) -> None:
         self.log_path = Path(log_path) if log_path else Path("logs/traces.jsonl")
         self._in_memory_traces: List[SessionTraceRecord] = []
+        # STT events go to a separate log file to keep concerns separated
+        self._stt_log_path = self.log_path.parent / "stt_events.jsonl"
+        self._in_memory_stt_events: List[STTEventTelemetry] = []
 
     def record_turn(
         self,
@@ -132,13 +173,57 @@ class StructuredTraceLogger:
 
         return record
 
+    def record_stt_event(
+        self,
+        event_name: str,
+        session_id: str,
+        sequence_id: int = 0,
+        provider: str = "unknown",
+        text_length: int = 0,
+        is_final: bool = False,
+        latency_ms: Optional[float] = None,
+        error_detail: Optional[str] = None,
+    ) -> STTEventTelemetry:
+        """Records a single STT lifecycle event.
+
+        SECURITY: raw transcript text is NEVER logged here.
+        error_detail must not contain API keys or secrets.
+        """
+        record = STTEventTelemetry(
+            event_name=event_name,
+            session_id=session_id,
+            timestamp_ms=int(time.time() * 1000),
+            sequence_id=sequence_id,
+            provider=provider,
+            text_length=text_length,
+            is_final=is_final,
+            latency_ms=latency_ms,
+            error_detail=error_detail,
+        )
+
+        self._in_memory_stt_events.append(record)
+
+        try:
+            self._stt_log_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._stt_log_path, "a", encoding="utf-8") as f:
+                f.write(record.to_json() + "\n")
+        except Exception:
+            pass
+
+        return record
+
     def get_traces_for_session(self, session_id: str) -> List[SessionTraceRecord]:
         """Returns in-memory traces for a specific session."""
         return [t for t in self._in_memory_traces if t.session_id == session_id]
 
+    def get_stt_events_for_session(self, session_id: str) -> List[STTEventTelemetry]:
+        """Returns in-memory STT telemetry events for a specific session."""
+        return [e for e in self._in_memory_stt_events if e.session_id == session_id]
+
     def clear(self) -> None:
         """Clears in-memory buffer."""
         self._in_memory_traces.clear()
+        self._in_memory_stt_events.clear()
 
 
 # Default singleton logger

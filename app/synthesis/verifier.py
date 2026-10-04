@@ -25,6 +25,9 @@ class VerificationResult(BaseModel):
     hallucination_detected: bool = Field(..., description="True if non-existent document IDs are cited")
     rejection_reason: Optional[str] = Field(default=None, description="Explanation if rejected")
     citation_support_ratio: float = Field(..., ge=0.0, le=1.0, description="Fraction of assertions supported by evidence")
+    verification_status: str = Field(..., description="Explicit status: VERIFIED, PARTIALLY GROUNDED, or INSUFFICIENT EVIDENCE")
+    total_claims: int = Field(default=0)
+    supported_claims: int = Field(default=0)
     valid_citations: List[str] = Field(default_factory=list)
     hallucinated_citations: List[str] = Field(default_factory=list)
     uncertainty: Optional[str] = Field(default=None, description="Explicit uncertainty declaration if intent unanswerable")
@@ -138,6 +141,9 @@ class GroundingVerifier:
                 hallucination_detected=True,
                 rejection_reason=f"HALLUCINATION: Non-existent or mismatched citation(s) detected: {hallucinated_citations}",
                 citation_support_ratio=0.0,
+                verification_status="INSUFFICIENT EVIDENCE",
+                total_claims=len(citations),
+                supported_claims=len(valid_citations),
                 valid_citations=valid_citations,
                 hallucinated_citations=hallucinated_citations,
                 uncertainty=None,
@@ -165,12 +171,22 @@ class GroundingVerifier:
             uncertainty = f"'{unanswered_str}' could not be verified from the retrieved corpus."
 
         is_grounded = (support_ratio >= 0.85) if sentences else True
+        
+        if support_ratio >= 1.0:
+            status = "VERIFIED"
+        elif support_ratio > 0.0:
+            status = "PARTIALLY GROUNDED"
+        else:
+            status = "INSUFFICIENT EVIDENCE"
 
         return VerificationResult(
             is_grounded=is_grounded,
             hallucination_detected=False,
             rejection_reason=None if is_grounded else f"Insufficient citation support: {support_ratio * 100:.1f}% < 85%",
             citation_support_ratio=support_ratio,
+            verification_status=status,
+            total_claims=len(sentences),
+            supported_claims=supported_sentences if sentences else 0,
             valid_citations=valid_citations,
             hallucinated_citations=[],
             uncertainty=uncertainty,

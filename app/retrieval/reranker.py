@@ -76,10 +76,19 @@ class CrossEncoderReranker:
         for cand in pool:
             c_tokens = set(re.findall(r"\b\w{3,}\b", cand.text.lower()))
             overlap = len(q_tokens & c_tokens) / max(1, len(q_tokens))
-            composite_score = cand.score + (0.5 * overlap)
-            scored_fallback.append((cand, composite_score))
+            # Weight overlap more heavily so relevance dominates over raw RRF rank
+            composite_score = (0.3 * cand.score) + (0.7 * overlap)
+            scored_fallback.append((cand, composite_score, overlap))
 
         scored_fallback.sort(key=lambda pair: pair[1], reverse=True)
+
+        # Filter out candidates with negligible query overlap (< 10%)
+        # to prevent clearly irrelevant documents from appearing
+        MIN_OVERLAP = 0.10
+        filtered = [(c, s) for c, s, ov in scored_fallback if ov >= MIN_OVERLAP]
+        if not filtered:
+            # If nothing passes the filter, keep top candidates as-is
+            filtered = [(c, s) for c, s, _ in scored_fallback]
 
         return [
             EvidenceCandidate(
@@ -91,5 +100,5 @@ class CrossEncoderReranker:
                 retriever=cand.retriever,
                 text=cand.text,
             )
-            for rank, (cand, score) in enumerate(scored_fallback[:top_k], start=1)
+            for rank, (cand, score) in enumerate(filtered[:top_k], start=1)
         ]

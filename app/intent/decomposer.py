@@ -80,24 +80,25 @@ class MultiIntentDecomposer:
 
         # Candidate intent categories
         intents_found: Dict[str, str] = {}
+        ev = shared_context.get("event_type", "event")
 
         # 1. Venue & Capacity intent
         venue_indicators = [
             "venue", "capacity", "room", "facility", "workshop in", "seats", "space", "location"
         ]
         if any(ind in cleaned.lower() for ind in venue_indicators) or (loc and hc):
-            q_parts = [p for p in [loc, "venue capacity", f"{hc} people" if hc else ""] if p]
-            intents_found["venue_capacity"] = " ".join(q_parts) or "venue capacity and booking"
+            q_parts = [p for p in [loc, f"{ev} venue capacity", f"{hc} people" if hc else ""] if p]
+            intents_found["venue_capacity"] = " ".join(q_parts) or f"{ev} venue capacity and booking"
 
         # 2. Cancellation & Refund intent
         cancel_indicators = ["cancellation", "cancel", "refund", "penalty", "cancellation policy"]
         if any(ind in cleaned.lower() for ind in cancel_indicators):
-            intents_found["cancellation_policy"] = "cancellation refund policy terms and penalties"
+            intents_found["cancellation_policy"] = f"{ev} cancellation refund policy terms and penalties"
 
         # 3. Catering & Meals intent
         catering_indicators = ["catering", "cater", "meal", "food", "lunch", "dietary", "buffet"]
         if any(ind in cleaned.lower() for ind in catering_indicators):
-            q_parts = [p for p in ["catering services food options", f"for {hc} people" if hc else ""] if p]
+            q_parts = [p for p in [f"{ev} catering services food options", f"for {hc} people" if hc else ""] if p]
             intents_found["catering_services"] = " ".join(q_parts)
 
         # 4. Reimbursement & Expense intent

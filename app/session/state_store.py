@@ -37,6 +37,9 @@ class SessionState(BaseModel):
     claims: List[ClaimItem] = Field(default_factory=list)
     evidence_chunk_ids: List[str] = Field(default_factory=list)
     last_answer: Optional[str] = Field(default=None)
+    g2_eligible: bool = Field(default=False)
+    g2_retrieval_start: Optional[float] = Field(default=None)
+    g2_utterance_end: Optional[float] = Field(default=None)
     created_at_ms: int = Field(default_factory=lambda: int(time.time() * 1000))
     updated_at_ms: int = Field(default_factory=lambda: int(time.time() * 1000))
 

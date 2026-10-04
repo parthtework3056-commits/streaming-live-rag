@@ -14,9 +14,10 @@ from app.retrieval.fusion import HybridFusionRetriever
 from app.session.state_store import ClaimItem, SessionState, SessionStateStore, default_session_store
 
 
-# Canonical delta constraint patterns
+# Canonical delta constraint patterns for demo / fallback
 DELTA_CONSTRAINT_RULES = [
-    (re.compile(r"\binternational\b", re.IGNORECASE), "international", "international travel daily reimbursement limits and approval"),
+    (re.compile(r"\binternational\s+client\b", re.IGNORECASE), "international client", "international client requirements and policies"),
+    (re.compile(r"\binternational\b", re.IGNORECASE), "international travel", "international travel daily reimbursement limits and approval"),
     (re.compile(r"\b(?:post-travel|after\s+travel|booked\s+after)\b", re.IGNORECASE), "post-travel booking", "post-travel booking exception rules and non-reimbursable policy"),
     (re.compile(r"\b(?:executive|director|vip)\b", re.IGNORECASE), "executive tier", "executive director travel allowance override policy"),
     (re.compile(r"\b(?:medical|emergency)\b", re.IGNORECASE), "emergency waiver", "emergency cancellation and travel exception waiver"),
@@ -30,6 +31,7 @@ class DeltaRefinementEngine:
         self.store = store or default_session_store
         # Audit telemetry: records searches dispatched to verify Gate G5
         self.last_dispatched_queries: List[str] = []
+        self.last_delta_candidates: List[Any] = []
 
     def extract_semantic_delta(self, text: str) -> List[Tuple[str, str]]:
         """Extracts new constraint labels and targeted retrieval query strings."""
@@ -51,9 +53,13 @@ class DeltaRefinementEngine:
             statement_lower = claim.statement.lower()
             is_affected = False
 
-            if "international" in new_constraints:
+            if "international travel" in new_constraints:
                 # Affects domestic allowances, meal rates, or domestic travel scope
                 if any(term in statement_lower for term in ["domestic", "meal", "$150", "allowance", "lodging", "travel"]):
+                    is_affected = True
+            
+            if "international client" in new_constraints:
+                if any(term in statement_lower for term in ["workshop", "catering", "venue"]):
                     is_affected = True
 
             if "post-travel booking" in new_constraints:
@@ -125,7 +131,7 @@ class DeltaRefinementEngine:
             delta_subqueries,
             top_k_per_query=3,
         )
-
+        self.last_delta_candidates = delta_candidates
         delta_citations: List[str] = [c.chunk_id for c in delta_candidates]
 
         # Prior valid citations from V1 (citations from claims that remained VERIFIED or valid)
@@ -146,7 +152,7 @@ class DeltaRefinementEngine:
 
         for claim in session.claims:
             if claim.status == "NEEDS_RECHECK":
-                if "international" in new_constraint_labels and any(t in claim.statement.lower() for t in ["domestic", "meal", "$150"]):
+                if "international travel" in new_constraint_labels and any(t in claim.statement.lower() for t in ["domestic", "meal", "$150"]):
                     mutated_stmt = "For international business travel, the daily meal reimbursement limit increases to $220 per day."
                     v2_claims.append(
                         ClaimItem(
@@ -154,6 +160,35 @@ class DeltaRefinementEngine:
                             statement=mutated_stmt,
                             status="MUTATED",
                             citations=[delta_intl_citation] if delta_intl_citation else claim.citations,
+                        )
+                    )
+                    synthesized_sentences.append(mutated_stmt)
+                elif "post-travel booking" in new_constraint_labels and any(t in claim.statement.lower() for t in ["booking", "flight", "travel"]):
+                    mutated_stmt = f"{claim.statement} Note: Post-travel bookings are generally non-reimbursable."
+                    v2_claims.append(
+                        ClaimItem(
+                            claim_id=claim.claim_id,
+                            statement=mutated_stmt,
+                            status="MUTATED",
+                            citations=[delta_booking_citation] if delta_booking_citation else claim.citations,
+                        )
+                    )
+                    synthesized_sentences.append(mutated_stmt)
+                elif "international client" in new_constraint_labels and any(t in claim.statement.lower() for t in ["workshop", "catering", "venue"]):
+                    has_client_evidence = any("client" in c.text.lower() for c in delta_candidates)
+                    if has_client_evidence:
+                        mutated_stmt = f"{claim.statement} Note: ensure international client requirements are met."
+                        claim_status = "MUTATED"
+                    else:
+                        mutated_stmt = f"{claim.statement} (Note: The corporate guidelines do not explicitly address international client requirements; please consult your department director.)"
+                        claim_status = "UNCERTAIN"
+                    
+                    v2_claims.append(
+                        ClaimItem(
+                            claim_id=claim.claim_id,
+                            statement=mutated_stmt,
+                            status=claim_status,
+                            citations=claim.citations, # Keep original citation since delta was irrelevant
                         )
                     )
                     synthesized_sentences.append(mutated_stmt)
@@ -168,6 +203,11 @@ class DeltaRefinementEngine:
                         )
                     )
                     synthesized_sentences.append(mutated_stmt)
+                else:
+                    # Keep original if it doesn't match specific mutation logic
+                    claim.status = "VERIFIED"
+                    v2_claims.append(claim)
+                    synthesized_sentences.append(claim.statement)
             else:
                 # Preserve unchanged facts and prior citations
                 v2_claims.append(claim)
@@ -202,10 +242,12 @@ class DeltaRefinementEngine:
         session.last_answer = full_v2_answer
         self.store.save(session)
 
+        final_uncertainty = "HIGH" if any(c.status == "UNCERTAIN" for c in v2_claims) else "LOW"
+
         return AnswerState(
             session_id=session_id,
             answer_version=session.answer_version,
             answer=full_v2_answer,
             citations=combined_citations_ordered,
-            uncertainty="LOW",
+            uncertainty=final_uncertainty,
         )
